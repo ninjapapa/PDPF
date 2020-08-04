@@ -10,17 +10,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import sys
-from unittest import *
 
-from test_support.test_runner import SmvTestRunner, TestConfig
+from test_support.smvbasetest import SmvBaseTest
+import os
 
-if __name__ == "__main__":
-    print("Testing with Python " + sys.version)
-
-
-    TestPath = TestConfig.test_path()
-
-    runner = SmvTestRunner(TestPath)
-    num_failures = runner.run(TestConfig.test_names())
-    exit(num_failures)
+class DummyTest(SmvBaseTest):
+    def test_dummy(self):
+        fqn = "stage1.modules.B"
+        self.assertEqual("stage1.modules.B", fqn)
