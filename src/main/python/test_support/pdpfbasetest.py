@@ -16,7 +16,7 @@ import unittest
 import os, shutil, sys
 from test_runner import TestConfig
 
-class SmvBaseTest(unittest.TestCase):
+class PdpfBaseTest(unittest.TestCase):
     # DataDir value is deprecated. Use tmpDataDir instead
     DataDir = "./target/data"
     PytestDir = "./target/pytest"
@@ -35,6 +35,7 @@ class SmvBaseTest(unittest.TestCase):
         args = []
         # The test's SmvApp must be set as the singleton for correct results of some tests
         # The original SmvApp (if any) will be restored when the test is torn down
+        args = []
         cls.pdpfApp = PdpfApp.createInstance(args, cls.sparkSession)
 
         sys.path.append(cls.resourceTestDir())

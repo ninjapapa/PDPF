@@ -11,10 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Errors thrown by SMV
+Errors thrown by PDPF
 """
-import json
 
 class PdpfRuntimeError(RuntimeError):
-    def __init__(self,msg):
-        super(PdpfRuntimeError,self).__init__(msg)
+    def __init__(self, msg):
+        super(PdpfRuntimeError, self).__init__(msg)

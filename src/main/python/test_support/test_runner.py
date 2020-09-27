@@ -13,7 +13,7 @@ import sys
 from unittest import *
 from pyspark.sql import SparkSession
 
-class SmvTestRunner(object):
+class PdpfTestRunner(object):
     """Runs SMV tests
 
         DOES NOT reload code. If code needs to be reloaded before running tests
