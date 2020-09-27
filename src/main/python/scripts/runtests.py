@@ -13,7 +13,7 @@
 import sys
 from unittest import *
 
-from test_support.test_runner import SmvTestRunner, TestConfig
+from test_support.test_runner import PdpfTestRunner, TestConfig
 
 if __name__ == "__main__":
     print("Testing with Python " + sys.version)
@@ -21,6 +21,6 @@ if __name__ == "__main__":
 
     TestPath = TestConfig.test_path()
 
-    runner = SmvTestRunner(TestPath)
+    runner = PdpfTestRunner(TestPath)
     num_failures = runner.run(TestConfig.test_names())
     exit(num_failures)

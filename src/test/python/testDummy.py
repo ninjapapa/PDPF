@@ -11,10 +11,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from test_support.smvbasetest import SmvBaseTest
+from test_support.pdpfbasetest import PdpfBaseTest
 import os
 
-class DummyTest(SmvBaseTest):
+class DummyTest(PdpfBaseTest):
     def test_dummy(self):
         fqn = "stage1.modules.B"
         app = self.pdpfApp

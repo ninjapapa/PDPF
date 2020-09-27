@@ -16,7 +16,7 @@ import unittest
 import os, shutil, sys
 from test_runner import TestConfig
 
-class SmvBaseTest(unittest.TestCase):
+class PdpfBaseTest(unittest.TestCase):
     # DataDir value is deprecated. Use tmpDataDir instead
     DataDir = "./target/data"
     PytestDir = "./target/pytest"
