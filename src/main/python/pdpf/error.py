@@ -10,13 +10,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+Errors thrown by PDPF
+"""
 
-from test_support.smvbasetest import SmvBaseTest
-import os
-
-class DummyTest(SmvBaseTest):
-    def test_dummy(self):
-        fqn = "stage1.modules.B"
-        app = self.pdpfApp
-        print(app.pdpfVersion())
-        self.assertEqual("stage1.modules.B", fqn)
+class PdpfRuntimeError(RuntimeError):
+    def __init__(self, msg):
+        super(PdpfRuntimeError, self).__init__(msg)

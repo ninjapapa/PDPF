@@ -21,11 +21,12 @@ if [ "$1" = "-h" ]; then
   exit 0
 fi
 
-SMV_TOOLS="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
-SMV_HOME="$(cd ${SMV_TOOLS}/..; pwd)"
-PYTHONPATH="$SMV_HOME/src/main/python:$PYTHONPATH"
+PDPF_TOOLS="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+PDPF_HOME="$(cd ${PDPF_TOOLS}/..; pwd)"
+export PDPF_HOME
+PYTHONPATH="$PDPF_HOME/src/main/python:$PYTHONPATH"
 PYTHONDONTWRITEBYTECODE=1
 
 ( export PYTHONDONTWRITEBYTECODE PYTHONPATH; \
-spark-submit ${SMV_TOOLS}/../src/main/python/scripts/runtests.py \
+spark-submit ${PDPF_TOOLS}/../src/main/python/scripts/runtests.py \
 )

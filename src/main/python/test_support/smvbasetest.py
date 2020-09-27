@@ -26,7 +26,7 @@ class SmvBaseTest(unittest.TestCase):
     def setUpClass(cls):
         # Import needs to happen during EVERY setup to ensure that we are
         # using the most recently reloaded SmvApp
-        #from smv.smvapp import SmvApp
+        from pdpf.pdpfapp import PdpfApp
 
         cls.sparkSession = TestConfig.sparkSession()
         cls.sparkSession.sparkContext.setLogLevel("ERROR")
@@ -34,7 +34,8 @@ class SmvBaseTest(unittest.TestCase):
         #args = TestConfig.smv_args() + cls.smvAppInitArgs() + ['--data-dir', cls.tmpDataDir()]
         # The test's SmvApp must be set as the singleton for correct results of some tests
         # The original SmvApp (if any) will be restored when the test is torn down
-        #cls.smvApp = SmvApp.createInstance(args, cls.sparkSession)
+        args = []
+        cls.pdpfApp = PdpfApp.createInstance(args, cls.sparkSession)
 
         sys.path.append(cls.resourceTestDir())
 
