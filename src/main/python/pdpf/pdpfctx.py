@@ -50,23 +50,32 @@ class PdpfCtx(object):
             return cls._instance
 
     @classmethod
-    def createInstance(cls, arglist, _sparkSession, py_module_hotload=True):
+    def createInstance(cls, config, _sparkSession, py_module_hotload=True):
         """Create singleton instance. Also returns the instance.
         """
-        cls._instance = cls(arglist, _sparkSession, py_module_hotload)
+        cls._instance = cls(config, _sparkSession, py_module_hotload)
         return cls._instance
 
     @classmethod
     def setInstance(cls, app):
         """Set the singleton instance.
+
+            config need to have at least 'projectName' and 'projectDir'
         """
         cls._instance = app
 
-    def __init__(self, arglist, _sparkSession, py_module_hotload=True):
+    def __init__(self, config, _sparkSession, py_module_hotload=True):
         self.sparkSession = _sparkSession
         self.pdpfHome = os.environ.get("PDPF_HOME")
         if (self.pdpfHome is None):
             raise PdpfRuntimeError("PDPF_HOME env variable not set!")
+
+        self.pdpfConf = config
+        self.projectName = config.get('projectName')
+        self.projectDir = config.get('projectDir')
+
+        if (self.projectDir is None or self.projectName is None):
+            raise PdpfRuntimeError("projectName and projectDir need to be specified in config param")
 
         self.sparkSession = _sparkSession
 
@@ -74,25 +83,13 @@ class PdpfCtx(object):
             sc = self.sparkSession.sparkContext
             sc.setLogLevel("ERROR")
 
+            # Set application name from config
+            sc._conf.setAppName(self.pdpfConf.get('projectName', 'pdpfProject'))
+
             self.sc = sc
             self.sqlContext = self.sparkSession._wrapped
 
         self.py_module_hotload = py_module_hotload
-
-        # self.py_smvconf = SmvConfig(arglist)
-
-        # configure spark sql params
-        # if (self.sparkSession is not None):
-        #     for k, v in self.py_smvconf.spark_sql_props().items():
-        #         self.sqlContext.setConf(k, v)
-
-        # issue #429 set application name from smv config
-        # if (self.sparkSession is not None):
-        #     sc._conf.setAppName(self.appName())
-
-        # CmdLine is static, so can be an attribute
-        # cl = self.py_smvconf.cmdline
-        # self.cmd_line = namedtuple("CmdLine", cl.keys())(*cl.values())
 
         # shortcut is meant for internal use only
         # self.dsm = DataSetMgr(self._jvm, self.py_smvconf)

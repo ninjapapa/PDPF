@@ -32,11 +32,14 @@ class PdpfBaseTest(unittest.TestCase):
         cls.sparkSession.sparkContext.setLogLevel("ERROR")
 
         #args = TestConfig.smv_args() + cls.smvAppInitArgs() + ['--data-dir', cls.tmpDataDir()]
-        args = []
         # The test's SmvApp must be set as the singleton for correct results of some tests
         # The original SmvApp (if any) will be restored when the test is torn down
-        args = []
-        cls.pdpfCtx = PdpfCtx.createInstance(args, cls.sparkSession)
+        conf = {
+            'projectDir': cls.PytestDir,
+            'projectName': 'pdpf-test'
+        }
+
+        cls.pdpfCtx = PdpfCtx.createInstance(conf, cls.sparkSession)
 
         sys.path.append(cls.resourceTestDir())
 
