@@ -26,6 +26,9 @@ class PdpfBaseTest(unittest.TestCase):
     def setUpClass(cls):
         # Import needs to happen during EVERY setup to ensure that we are
         # using the most recently reloaded SmvApp
+        import pdpf
+        pdpf.logger.setLevel('DEBUG')
+
         from pdpf.pdpfctx import PdpfCtx
 
         cls.sparkSession = TestConfig.sparkSession()

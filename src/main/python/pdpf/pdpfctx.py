@@ -21,6 +21,7 @@ import re
 import json
 import pkgutil
 
+import pdpf
 from pdpf.error import PdpfRuntimeError
 
 from pyspark import SparkContext
@@ -99,7 +100,7 @@ class PdpfCtx(object):
 
         # AFTER app is available but BEFORE stages,
         # use the dynamically configured app dir to set the source path, library path
-        # self.prependDefaultDirs()
+        self.prependDefaultDirs()
 
         # self.repoFactory = DataSetRepoFactory(self)
         # self.dsm.register(self.repoFactory)
@@ -113,3 +114,37 @@ class PdpfCtx(object):
         with open(versionFile, "r") as fp:
             line = fp.readline()
         return line.strip()
+
+    def prependDefaultDirs(self):
+        """ Ensure that mods in src/main/python and library/ are discoverable.
+            If we add more default dirs, we'll make this a set
+        """
+        self._prepend_source(self.SRC_LIB_PATH)
+        self._prepend_source(self.SRC_PROJECT_PATH)
+
+    def removeDefaultDirs(self):
+        """ The cleanup version of prependDefaultDirs
+        """
+        self._remove_source(self.SRC_PROJECT_PATH)
+        self._remove_source(self.SRC_LIB_PATH)
+
+    def _abs_path_for_project_path(self, src_path):
+        # Load dynamic app dir from scala
+        return os.path.abspath(os.path.join(self.projectDir, src_path))
+
+    def _prepend_source(self, src_path):
+        abs_path = self._abs_path_for_project_path(src_path)
+        # Source must be added to front of path to make sure it is found first
+        sys.path.insert(1, abs_path)
+        pdpf.logger.debug("Prepended {} to sys.path".format(abs_path))
+
+    def _remove_source(self, src_path):
+        try:
+            abs_path = self._abs_path_for_project_path(src_path)
+            sys.path.remove(abs_path)
+            pdpf.logger.debug("Removed {} from sys.path".format(abs_path))
+        except ValueError:
+            # ValueError will be raised if the project path was not previously
+            # added to the sys.path
+            pass
+
