@@ -17,6 +17,6 @@ import os
 class DummyTest(PdpfBaseTest):
     def test_dummy(self):
         fqn = "stage1.modules.B"
-        app = self.pdpfApp
-        print(app.pdpfVersion())
+        ctx = self.pdpfCtx
+        print(ctx.pdpfVersion())
         self.assertEqual("stage1.modules.B", fqn)

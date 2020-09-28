@@ -27,7 +27,7 @@ from pyspark import SparkContext
 from pyspark.sql import SparkSession, DataFrame
 
 
-class PdpfApp(object):
+class PdpfCtx(object):
     """The Python representation of Pdpf.
 
     Its singleton instance is created later in the containing module
