@@ -21,13 +21,14 @@ import re
 import json
 import pkgutil
 
+import pdpf
 from pdpf.error import PdpfRuntimeError
 
 from pyspark import SparkContext
 from pyspark.sql import SparkSession, DataFrame
 
 
-class PdpfApp(object):
+class PdpfCtx(object):
     """The Python representation of Pdpf.
 
     Its singleton instance is created later in the containing module
@@ -50,23 +51,32 @@ class PdpfApp(object):
             return cls._instance
 
     @classmethod
-    def createInstance(cls, arglist, _sparkSession, py_module_hotload=True):
+    def createInstance(cls, config, _sparkSession, py_module_hotload=True):
         """Create singleton instance. Also returns the instance.
         """
-        cls._instance = cls(arglist, _sparkSession, py_module_hotload)
+        cls._instance = cls(config, _sparkSession, py_module_hotload)
         return cls._instance
 
     @classmethod
     def setInstance(cls, app):
         """Set the singleton instance.
+
+            config need to have at least 'projectName' and 'projectDir'
         """
         cls._instance = app
 
-    def __init__(self, arglist, _sparkSession, py_module_hotload=True):
+    def __init__(self, config, _sparkSession, py_module_hotload=True):
         self.sparkSession = _sparkSession
         self.pdpfHome = os.environ.get("PDPF_HOME")
         if (self.pdpfHome is None):
             raise PdpfRuntimeError("PDPF_HOME env variable not set!")
+
+        self.pdpfConf = config
+        self.projectName = config.get('projectName')
+        self.projectDir = config.get('projectDir')
+
+        if (self.projectDir is None or self.projectName is None):
+            raise PdpfRuntimeError("projectName and projectDir need to be specified in config param")
 
         self.sparkSession = _sparkSession
 
@@ -74,25 +84,13 @@ class PdpfApp(object):
             sc = self.sparkSession.sparkContext
             sc.setLogLevel("ERROR")
 
+            # Set application name from config
+            sc._conf.setAppName(self.pdpfConf.get('projectName', 'pdpfProject'))
+
             self.sc = sc
             self.sqlContext = self.sparkSession._wrapped
 
         self.py_module_hotload = py_module_hotload
-
-        # self.py_smvconf = SmvConfig(arglist)
-
-        # configure spark sql params
-        # if (self.sparkSession is not None):
-        #     for k, v in self.py_smvconf.spark_sql_props().items():
-        #         self.sqlContext.setConf(k, v)
-
-        # issue #429 set application name from smv config
-        # if (self.sparkSession is not None):
-        #     sc._conf.setAppName(self.appName())
-
-        # CmdLine is static, so can be an attribute
-        # cl = self.py_smvconf.cmdline
-        # self.cmd_line = namedtuple("CmdLine", cl.keys())(*cl.values())
 
         # shortcut is meant for internal use only
         # self.dsm = DataSetMgr(self._jvm, self.py_smvconf)
@@ -102,7 +100,7 @@ class PdpfApp(object):
 
         # AFTER app is available but BEFORE stages,
         # use the dynamically configured app dir to set the source path, library path
-        # self.prependDefaultDirs()
+        self.prependDefaultDirs()
 
         # self.repoFactory = DataSetRepoFactory(self)
         # self.dsm.register(self.repoFactory)
@@ -116,3 +114,37 @@ class PdpfApp(object):
         with open(versionFile, "r") as fp:
             line = fp.readline()
         return line.strip()
+
+    def prependDefaultDirs(self):
+        """ Ensure that mods in src/main/python and library/ are discoverable.
+            If we add more default dirs, we'll make this a set
+        """
+        self._prepend_source(self.SRC_LIB_PATH)
+        self._prepend_source(self.SRC_PROJECT_PATH)
+
+    def removeDefaultDirs(self):
+        """ The cleanup version of prependDefaultDirs
+        """
+        self._remove_source(self.SRC_PROJECT_PATH)
+        self._remove_source(self.SRC_LIB_PATH)
+
+    def _abs_path_for_project_path(self, src_path):
+        # Load dynamic app dir from scala
+        return os.path.abspath(os.path.join(self.projectDir, src_path))
+
+    def _prepend_source(self, src_path):
+        abs_path = self._abs_path_for_project_path(src_path)
+        # Source must be added to front of path to make sure it is found first
+        sys.path.insert(1, abs_path)
+        pdpf.logger.debug("Prepended {} to sys.path".format(abs_path))
+
+    def _remove_source(self, src_path):
+        try:
+            abs_path = self._abs_path_for_project_path(src_path)
+            sys.path.remove(abs_path)
+            pdpf.logger.debug("Removed {} from sys.path".format(abs_path))
+        except ValueError:
+            # ValueError will be raised if the project path was not previously
+            # added to the sys.path
+            pass
+

@@ -14,35 +14,60 @@
 import unittest
 
 import os, shutil, sys
-from test_runner import TestConfig
+from .test_runner import TestConfig
 
 class PdpfBaseTest(unittest.TestCase):
-    # DataDir value is deprecated. Use tmpDataDir instead
-    DataDir = "./target/data"
+    """Base Test Suite
+
+        Each test suite creates its own PDPF context from a shared Spark Session for each
+        test run (test_runner.py)
+    """
     PytestDir = "./target/pytest"
     TestSrcDir = "./src/test/python"
 
     @classmethod
     def setUpClass(cls):
-        # Import needs to happen during EVERY setup to ensure that we are
-        # using the most recently reloaded SmvApp
-        from pdpf.pdpfapp import PdpfApp
+        import pdpf
+        pdpf.logger.setLevel('DEBUG')
+
+        from pdpf.pdpfctx import PdpfCtx
 
         cls.sparkSession = TestConfig.sparkSession()
         cls.sparkSession.sparkContext.setLogLevel("ERROR")
 
-        #args = TestConfig.smv_args() + cls.smvAppInitArgs() + ['--data-dir', cls.tmpDataDir()]
-        args = []
-        # The test's SmvApp must be set as the singleton for correct results of some tests
-        # The original SmvApp (if any) will be restored when the test is torn down
-        args = []
-        cls.pdpfApp = PdpfApp.createInstance(args, cls.sparkSession)
+        # pdpf config is simply a dictionary
+        conf = {
+            'projectDir': cls.PytestDir,
+            'projectName': 'pdpf-test'
+        }
+
+        cls.pdpfCtx = PdpfCtx.createInstance(conf, cls.sparkSession)
 
         sys.path.append(cls.resourceTestDir())
 
-        #cls.mkTmpTestDir()
+        cls.mkTmpTestDir()
+
+    @classmethod
+    def tearDownClass(cls):
+        sys.path.remove(cls.resourceTestDir())
 
     @classmethod
     def resourceTestDir(cls):
         """Directory where resources (like modules to run) for this test are expected."""
         return cls.TestSrcDir + "/" + cls.__module__
+
+    @classmethod
+    def tmpTestDir(cls):
+        """Temporary directory for each test to put the files it creates. Automatically cleaned up."""
+        return cls.PytestDir + "/" + cls.__name__
+
+    @classmethod
+    def tmpDataDir(cls):
+        """Temporary directory for each test to put the data it creates. Automatically cleaned up."""
+        return cls.tmpTestDir() + "/data"
+
+    @classmethod
+    def mkTmpTestDir(cls):
+        shutil.rmtree(cls.tmpTestDir(), ignore_errors=True)
+        os.makedirs(cls.tmpTestDir())
+
