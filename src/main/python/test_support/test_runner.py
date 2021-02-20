@@ -17,7 +17,7 @@ class PdpfTestRunner(object):
     """Runs SMV tests
 
         DOES NOT reload code. If code needs to be reloaded before running tests
-        (as in smv-pyshell), this must happen before the run method is called.
+        this must happen before the run method is called.
     """
     def __init__(self, test_path):
         # The path where the test modules with be found
@@ -45,11 +45,17 @@ class PdpfTestRunner(object):
 
 
 class TestConfig(object):
+    """Global Test Context
+
+        Provides SparkSession as a singleton
+    """
 
     @classmethod
     def sparkSession(cls):
         if not hasattr(cls, "spark"):
-            #hivedir = "file://{0}/{1}/smv_hive_test".format(tempfile.gettempdir(), getpass.getuser())
+            import tempfile
+            import getpass
+            hivedir = "file://{0}/{1}/smv_hive_test".format(tempfile.gettempdir(), getpass.getuser())
             spark_builder = (SparkSession.builder
                 .master("local[*]")
                 .appName("PDPF Test")
@@ -60,7 +66,7 @@ class TestConfig(object):
                 .config("spark.sql.test", "")
                 .config("spark.sql.hive.metastore.barrierPrefixes",
                         "org.apache.spark.sql.hive.execution.PairSerDe")
-                #.config("spark.sql.warehouse.dir", hivedir)\
+                .config("spark.sql.warehouse.dir", hivedir)\
                 .config("spark.ui.enabled", "false")
             )
 
