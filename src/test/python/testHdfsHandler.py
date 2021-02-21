@@ -17,10 +17,23 @@ from pdpf.hdfshandler import HdfsHandler
 import os
 import sys
 
-class DummyTest(PdpfBaseTest):
+class HdfsTest(PdpfBaseTest):
+    hdfs = None
+
+    def setUp(self):
+        self.hdfs = HdfsHandler(self.pdpfCtx)
+
     def test_exist(self):
         tmpfile = "test_exist.tmp"
         path = "{}/{}".format(self.tmpTestDir(), tmpfile)
         with open(path, 'w') as f:
             f.write('xxxx')
-        assert(HdfsHandler(self.pdpfCtx).exists(path))
+        assert(self.hdfs.exists(path))
+
+    def test_create(self):
+        tmpfile = "test_create.tmp"
+        path = "{}/{}".format(self.tmpTestDir(), tmpfile)
+        self.hdfs.createFileAtomic(path)
+        assert(self.hdfs.exists(path))
+
+

@@ -28,3 +28,5 @@ class HdfsHandler(object):
         fs = self._getFileSystem(path)
         return fs.exists(self.Path(path))
 
+    def createFileAtomic(self, path):
+        self._getFileSystem(path).create(self.Path(path), False).close()
