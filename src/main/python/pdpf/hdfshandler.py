@@ -33,3 +33,9 @@ class HdfsHandler(object):
 
     def deleteFile(self, path):
         return self._getFileSystem(path).delete(self.Path(path), True)
+
+    def readFromFile(self, path):
+        stream = self._getFileSystem(path).open(self.Path(path))
+        writer = self.jvm.java.io.StringWriter()
+        self.jvm.org.apache.commons.io.IOUtils.copy(stream, writer, "UTF-8")
+        return writer.toString()

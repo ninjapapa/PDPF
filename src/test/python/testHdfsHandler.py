@@ -44,3 +44,9 @@ class HdfsTest(PdpfBaseTest):
         self.hdfs.deleteFile(path)
         assert(not os.path.exists(path))
 
+    def test_read(self):
+        path = self._path("test_read.tmp")
+        teststr = "===read test string==="
+        with open(path, 'w') as f:
+            f.write(teststr)
+        self.assertEqual(self.hdfs.readFromFile(path), teststr)
