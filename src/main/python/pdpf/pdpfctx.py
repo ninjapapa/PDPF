@@ -78,6 +78,7 @@ class PdpfCtx(object):
 
         if (self.projectDir is None or self.projectName is None):
             raise PdpfRuntimeError("projectName and projectDir need to be specified in config param")
+        self.tmpDataDir = config.get('tmpDataDir', "{}/tmpData".format(self.projectDir))
 
         self.sparkSession = _sparkSession
 

@@ -13,11 +13,11 @@
 
 from test_support.pdpfbasetest import PdpfBaseTest
 import pdpf
+from pdpf.pdpfmodulerunner import PdpfModuleRunner
 from pdpf.iostrategy import TextOnHdfsIoStrategy, PicklablePersistenceStrategy,\
     ParquetPersistenceStrategy
 import os
 import sys
-from pyspark.sql.types import StructField, StructType, StringType
 
 class IoStrategyTest(PdpfBaseTest):
     def _path(self, filename):
@@ -47,12 +47,19 @@ class IoStrategyTest(PdpfBaseTest):
         path = self._path("test_parquet.tmp")
         ioS = ParquetPersistenceStrategy(self.pdpfCtx, path)
         teststr = "===write test string==="
-        schema = StructType([ StructField('str', StringType(), False) ])
-        df = self.pdpfCtx.sparkSession.createDataFrame(
-            [{ 'str': teststr }],
-            schema
-        )
+        df = self.simpleStrDf(teststr)
         ioS.write(df)
         resDF = ioS.read()
-        res = resDF.collect()[0][0]
-        self.assertEqual(res, teststr)
+        self.assertSimpleStrDf(resDF, teststr)
+
+    def test_sparkdf_persist(self):
+        from project2.modules import M1
+        m = M1(self.pdpfCtx)
+        m._resolve()
+
+        # below should be replaced by "df" function in Base
+        def run_debug(info):
+            log = pdpf.logger
+            log.debug("Runinfo {}".format(info))
+        [mdata] = PdpfModuleRunner([m], self.pdpfCtx, run_debug).run()
+        self.assertSimpleStrDf(mdata, 'test_str')
