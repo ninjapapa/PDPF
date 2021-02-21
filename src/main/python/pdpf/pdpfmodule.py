@@ -78,6 +78,27 @@ class PdpfGenericModule(ABC):
         """
         pass
 
+    @abc.abstractmethod
+    def run(self, i):
+        """User-specified definition of the operations of this SmvModule
+
+            Override this method to define the output of this module, given a map
+            'i' from input SmvGenericModule to resulting DataFrame. 'i' will have a
+            mapping for each SmvGenericModule listed in requiresDS. E.g.
+
+            def requiresDS(self):
+                return [MyDependency]
+
+            def run(self, i):
+                return i[MyDependency].select("importantColumn")
+
+            Args:
+                (RunParams): mapping from input SmvGenericModule to DataFrame
+
+            Returns:
+                (DataFrame): output of this SmvModule
+        """
+
     def version(self):
         """Version number
             Deprecated!
@@ -115,6 +136,41 @@ class PdpfGenericModule(ABC):
         """
         return 0
 
+    # Sub-class implementation of doRun may use RunParams
+    class RunParams(object):
+        """Map from SmvGenericModule to resulting DataFrame
+
+            We need to simulate a dict from ds to df where the same object can be
+            keyed by different datasets with the same fqn. For example, in the
+            module
+
+            class X(SmvModule):
+                def requiresDS(self): return [Foo]
+                def run(self, i): return i[Foo]
+
+            the i argument of the run method should map Foo to
+            the correct DataFrame.
+
+            Args:
+                (dict): a map from fqn to DataFrame
+        """
+
+        def __init__(self, fqn2df):
+            self.fqn2df = fqn2df
+
+        def __getitem__(self, ds):
+            """Called by the '[]' operator
+            """
+            if not hasattr(ds, 'fqn'):
+                raise TypeError('Argument to RunParams must be an SmvGenericModule')
+            else:
+                return self.fqn2df[ds.fqn()]
+
+    def doRun(self, known):
+        """Compute this dataset, and return the dataframe"""
+        i = self.RunParams(known)
+        res = self.run(i)
+        return res
 
     #########################################################################
     # Internal method for hash of hash calculation
@@ -172,6 +228,7 @@ class PdpfGenericModule(ABC):
         """dummy resolve
         """
         self.resolvedRequiresDS = [M(self.pdpfCtx) for M in self.requiresDS()]
+        return self
 
     @lazy_property
     def _hash_of_hash(self):
@@ -198,3 +255,27 @@ class PdpfGenericModule(ABC):
             version of the module
         """
         return "{}_{}".format(self.fqn(), self._ver_hex())
+
+    #########################################################################
+    # Internal method for run module
+    #########################################################################
+    def _populate_data(self, fqn2df):
+        """Entry point for the module runner
+            create module data
+            fqn2df will be appended
+        """
+        res = self._computeData(fqn2df)
+        fqn2df.update({self.fqn(): res})
+        return None
+
+    def _computeData(self, fqn2df):
+        """When DF is not in cache, do the real calculation here
+        """
+        pdpf.logger.debug("compute: {}".format(self.fqn()))
+
+        raw_df = self.doRun(fqn2df)
+        self.data = raw_df
+        return self.data
+
+    def _is_persisted(self):
+        return False
