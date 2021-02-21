@@ -1,3 +1,5 @@
+from pdpf.pdpfmodule import PdpfGenericModule
+
 import logging
 logger = logging.getLogger(__name__)
 # Default logging settings

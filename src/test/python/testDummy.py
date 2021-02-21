@@ -13,10 +13,20 @@
 
 from test_support.pdpfbasetest import PdpfBaseTest
 import os
+import sys
 
 class DummyTest(PdpfBaseTest):
     def test_dummy(self):
-        fqn = "stage1.modules.B"
+        fqn = "project.modules.M1"
         ctx = self.pdpfCtx
-        print(ctx.pdpfVersion())
-        self.assertEqual("stage1.modules.B", fqn)
+        print("Context version: {}".format(ctx.pdpfVersion()))
+        from project.modules import M1
+        m = M1(ctx)
+        print("Module Versioned FQN: {}".format(m.versioned_fqn))
+        self.assertEqual(m.fqn(), fqn)
+
+    def test_requiresDS(self):
+        from project.modules import M2
+        m = M2(self.pdpfCtx)
+        m._resolve()
+        print("Module Versioned FQN: {}".format(m.versioned_fqn))
