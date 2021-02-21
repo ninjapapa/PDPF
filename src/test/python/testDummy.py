@@ -12,6 +12,8 @@
 # limitations under the License.
 
 from test_support.pdpfbasetest import PdpfBaseTest
+from pdpf.pdpfmodulerunner import PdpfModuleRunner
+import pdpf
 import os
 import sys
 
@@ -30,3 +32,18 @@ class DummyTest(PdpfBaseTest):
         m = M2(self.pdpfCtx)
         m._resolve()
         print("Module Versioned FQN: {}".format(m.versioned_fqn))
+
+    def test_moduleRunner(self):
+        # following should be replaced by DS resolver
+        from project.modules import M2
+        m = M2(self.pdpfCtx)
+        m._resolve()
+
+        # below should be replaced by "df" function in Base
+        def run_debug(info):
+            log = pdpf.logger
+            log.debug("Runinfo {}".format(info))
+        [mdata] = PdpfModuleRunner([m], self.pdpfCtx, run_debug).run()
+
+        self.assertEqual(3, mdata)
+
