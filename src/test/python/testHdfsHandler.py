@@ -23,17 +23,24 @@ class HdfsTest(PdpfBaseTest):
     def setUp(self):
         self.hdfs = HdfsHandler(self.pdpfCtx)
 
+    def _path(self, filename):
+        return "{}/{}".format(self.tmpTestDir(), filename)
+
     def test_exist(self):
-        tmpfile = "test_exist.tmp"
-        path = "{}/{}".format(self.tmpTestDir(), tmpfile)
+        path = self._path("test_exist.tmp")
         with open(path, 'w') as f:
             f.write('xxxx')
         assert(self.hdfs.exists(path))
 
     def test_create(self):
-        tmpfile = "test_create.tmp"
-        path = "{}/{}".format(self.tmpTestDir(), tmpfile)
+        path = self._path("test_create.tmp")
         self.hdfs.createFileAtomic(path)
         assert(self.hdfs.exists(path))
 
+    def test_delete(self):
+        path = self._path("test_delete.tmp")
+        self.hdfs.createFileAtomic(path)
+        assert(os.path.exists(path))
+        self.hdfs.deleteFile(path)
+        assert(not os.path.exists(path))
 

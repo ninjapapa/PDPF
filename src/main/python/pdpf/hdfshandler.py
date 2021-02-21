@@ -29,4 +29,7 @@ class HdfsHandler(object):
         return fs.exists(self.Path(path))
 
     def createFileAtomic(self, path):
-        self._getFileSystem(path).create(self.Path(path), False).close()
+        return self._getFileSystem(path).create(self.Path(path), False).close()
+
+    def deleteFile(self, path):
+        return self._getFileSystem(path).delete(self.Path(path), True)
