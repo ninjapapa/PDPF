@@ -39,3 +39,18 @@ class HdfsHandler(object):
         writer = self.jvm.java.io.StringWriter()
         self.jvm.org.apache.commons.io.IOUtils.copy(stream, writer, "UTF-8")
         return writer.toString()
+
+    def writeToFile(self, contents, path):
+        hdfs = self._getFileSystem(path)
+        hdfsPath = self.Path(path)
+        if (hdfs.exists(hdfsPath)):
+            hdfs.delete(hdfsPath, True)
+
+        out = hdfs.create(hdfsPath)
+        outStream = self.jvm.java.io.OutputStreamWriter(out, "UTF-8")
+        bufferWriter = self.jvm.java.io.BufferedWriter(outStream)
+
+        bufferWriter.write(contents)
+        bufferWriter.close()
+        out.close()
+

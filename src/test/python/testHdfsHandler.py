@@ -50,3 +50,10 @@ class HdfsTest(PdpfBaseTest):
         with open(path, 'w') as f:
             f.write(teststr)
         self.assertEqual(self.hdfs.readFromFile(path), teststr)
+
+    def test_write(self):
+        path = self._path("test_write.tmp")
+        teststr = "===write test string==="
+        self.hdfs.writeToFile(teststr, path)
+        res = self.hdfs.readFromFile(path)
+        self.assertEqual(res, teststr)
