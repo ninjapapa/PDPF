@@ -168,6 +168,11 @@ class PdpfGenericModule(ABC):
         # ensure python's numeric type can fit in a java.lang.Integer
         return res & 0x7fffffff
 
+    def _resolve(self):
+        """dummy resolve
+        """
+        self.resolvedRequiresDS = [M(self.pdpfCtx) for M in self.requiresDS()]
+
     @lazy_property
     def _hash_of_hash(self):
         """hash depends on current module's _dataset_hash, and all ancestors.

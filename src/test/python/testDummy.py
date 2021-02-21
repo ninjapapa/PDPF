@@ -24,3 +24,9 @@ class DummyTest(PdpfBaseTest):
         m = M1(ctx)
         print("Module Versioned FQN: {}".format(m.versioned_fqn))
         self.assertEqual(m.fqn(), fqn)
+
+    def test_requiresDS(self):
+        from project.modules import M2
+        m = M2(self.pdpfCtx)
+        m._resolve()
+        print("Module Versioned FQN: {}".format(m.versioned_fqn))
