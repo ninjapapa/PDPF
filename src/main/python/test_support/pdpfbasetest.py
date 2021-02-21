@@ -14,7 +14,8 @@
 import unittest
 
 import os, shutil, sys
-from .test_runner import TestConfig
+from test_support.test_runner import TestConfig
+from pyspark.sql.types import StructField, StructType, StringType
 
 class PdpfBaseTest(unittest.TestCase):
     """Base Test Suite
@@ -37,8 +38,9 @@ class PdpfBaseTest(unittest.TestCase):
 
         # pdpf config is simply a dictionary
         conf = {
-            'projectDir': cls.PytestDir,
-            'projectName': 'pdpf-test'
+            'projectDir': cls.resourceTestDir(),
+            'projectName': 'pdpf-test',
+            'tmpDataDir': cls.tmpDataDir()
         }
 
         cls.pdpfCtx = PdpfCtx.createInstance(conf, cls.sparkSession)
@@ -64,10 +66,20 @@ class PdpfBaseTest(unittest.TestCase):
     @classmethod
     def tmpDataDir(cls):
         """Temporary directory for each test to put the data it creates. Automatically cleaned up."""
-        return cls.tmpTestDir() + "/data"
+        return cls.tmpTestDir() + "/tmpData"
 
     @classmethod
     def mkTmpTestDir(cls):
         shutil.rmtree(cls.tmpTestDir(), ignore_errors=True)
         os.makedirs(cls.tmpTestDir())
 
+    def simpleStrDf(self, string):
+        schema = StructType([ StructField('str', StringType(), False) ])
+        df = self.pdpfCtx.sparkSession.createDataFrame(
+            [{ 'str': string }],
+            schema
+        )
+        return df
+
+    def assertSimpleStrDf(self, df, string):
+        self.assertEqual(string, df.collect()[0][0])

@@ -23,6 +23,7 @@ import pkgutil
 
 import pdpf
 from pdpf.error import PdpfRuntimeError
+from pdpf.hdfshandler import HdfsHandler
 
 from pyspark import SparkContext
 from pyspark.sql import SparkSession, DataFrame
@@ -77,6 +78,7 @@ class PdpfCtx(object):
 
         if (self.projectDir is None or self.projectName is None):
             raise PdpfRuntimeError("projectName and projectDir need to be specified in config param")
+        self.tmpDataDir = config.get('tmpDataDir', "{}/tmpData".format(self.projectDir))
 
         self.sparkSession = _sparkSession
 
@@ -90,6 +92,7 @@ class PdpfCtx(object):
             self.sc = sc
             self.sqlContext = self.sparkSession._wrapped
 
+        self.hdfs = HdfsHandler(self)
         self.py_module_hotload = py_module_hotload
 
         # shortcut is meant for internal use only

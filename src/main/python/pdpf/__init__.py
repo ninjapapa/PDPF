@@ -1,4 +1,4 @@
-from pdpf.pdpfmodule import PdpfGenericModule
+from pdpf.pdpfmodule import PdpfGenericModule, PdpfSparkDfMod
 
 import logging
 logger = logging.getLogger(__name__)

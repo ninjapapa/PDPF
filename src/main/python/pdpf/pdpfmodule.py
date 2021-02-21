@@ -13,10 +13,14 @@
 import abc
 import inspect
 import traceback
+from datetime import datetime
 
 import pdpf
 from pdpf.utils import ABC, is_string, pdpfhash, stripComments, lazy_property
+from pdpf.iostrategy import NonOpPersistenceStrategy, ParquetPersistenceStrategy
+from pdpf.error import PdpfRuntimeError
 
+from pyspark.sql import DataFrame
 
 def _sourceHash(module):
     src = inspect.getsource(module)
@@ -115,6 +119,8 @@ class PdpfGenericModule(ABC):
     # - persistStrategy: Required
     # - _dependencies: Optional, default self.requiresDS()
     # - instanceValHash: Optional, default 0
+    # - persistStrategy: Optional, default NonOpPersistenceStrategy
+    # - _assure_output_type: Optional
     # - doRun: Required
     #########################################################################
 
@@ -135,6 +141,10 @@ class PdpfGenericModule(ABC):
                 (int)
         """
         return 0
+
+    def persistStrategy(self):
+        """Return an SmvIoStrategy for data persisting"""
+        return NonOpPersistenceStrategy()
 
     # Sub-class implementation of doRun may use RunParams
     class RunParams(object):
@@ -166,10 +176,17 @@ class PdpfGenericModule(ABC):
             else:
                 return self.fqn2df[ds.fqn()]
 
+    def _assure_output_type(self, data):
+        """Check whether the output of run method is expected by the concrete module
+            Raise an exception if check failed
+        """
+        pass
+
     def doRun(self, known):
         """Compute this dataset, and return the dataframe"""
         i = self.RunParams(known)
         res = self.run(i)
+        self._assure_output_type(res)
         return res
 
     #########################################################################
@@ -268,14 +285,74 @@ class PdpfGenericModule(ABC):
         fqn2df.update({self.fqn(): res})
         return None
 
+    def _do_action_on_df(self, func, df, desc):
+        log = pdpf.logger
+        log.info("STARTING {} on {}".format(desc, self.fqn()))
+
+        before  = datetime.now()
+
+        res = func(df)
+
+        after   = datetime.now()
+        duration = (after - before)
+        secondsElapsed = duration.total_seconds()
+
+        log.info("COMPLETED {}: {}".format(desc, self.fqn()))
+        log.info("RunTime: {}".format(duration))
+
+        return (res, secondsElapsed)
+
+
     def _computeData(self, fqn2df):
         """When DF is not in cache, do the real calculation here
         """
         pdpf.logger.debug("compute: {}".format(self.fqn()))
+        _strategy = self.persistStrategy()
+        if (not _strategy.isPersisted()):
+            df = self.doRun(fqn2df)
+            # Acquire lock on persist to ensure write is atomic
+            # with self._smvLock():
+            (res, persistingTimeElapsed) = self._do_action_on_df(
+                _strategy.write, df, "RUN & PERSIST OUTPUT")
+            # Need to populate self.data, since postAction need it
+            if (_strategy.isPersisted()):
+                # NonOp write will do nothing, so still not persisted
+                self.data = _strategy.read()
+            else:
+                self.data = df
+        else:
+            pdpf.logger.debug("{} had a persisted file".format(self.fqn()))
+            self.data = _strategy.read()
 
-        raw_df = self.doRun(fqn2df)
-        self.data = raw_df
         return self.data
 
     def _is_persisted(self):
-        return False
+        return self.persistStrategy().isPersisted()
+
+class PdpfSparkDfMod(PdpfGenericModule):
+    """Base class for Spark DFs
+    """
+    # Override this to add the task to a Spark job group
+    def _do_action_on_df(self, func, df, desc):
+        name = self.fqn()
+        self.pdpfCtx.sc.setJobGroup(groupId=name, description=desc)
+        (res, secondsElapsed) = super(PdpfSparkDfMod, self)._do_action_on_df(func, df, desc)
+
+        # Python api does not have clearJobGroup
+        # set groupId and description to None is equivalent
+        self.pdpfCtx.sc.setJobGroup(groupId=None, description=None)
+        return (res, secondsElapsed)
+
+    def _persist_path(self):
+        name = self.versioned_fqn
+        return "{}/{}.parquet".format(self.pdpfCtx.tmpDataDir, name)
+
+    def persistStrategy(self):
+        return ParquetPersistenceStrategy(self.pdpfCtx, self._persist_path())
+
+    def _assure_output_type(self, run_output):
+        if (not isinstance(run_output, DataFrame)):
+            raise PdpfRuntimeError(
+                'The output data from this module should be a Spark DataFrame, but {} is given.'.format(type(run_output))
+            )
+
